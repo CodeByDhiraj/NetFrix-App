@@ -1,19 +1,18 @@
 /* ------------------------------------------------------------------
-   ContentGrid  – category-driven, future-proof
-   Clicking a card  ➜  /content/[id]
-   Clicking ▶ Play   ➜  /watch/[id]
+   ContentGrid  – horizontal Netflix‑style rows (mobile swipeable)
 ------------------------------------------------------------------- */
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import Link  from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Play, ThumbsUp, ChevronDown, Heart } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import JetLoader from '@/components/ui/jet-loader'
-import { categories } from '@/lib/categories'         // ⬅️ our central category list
+import { Card }   from '@/components/ui/card'
+import JetLoader  from '@/components/ui/jet-loader'
+import { categories } from '@/lib/categories'
+import HorizontalSlider from '@/components/Slider/HorizontalSlider'
 
 /* ─────────────── Types ─────────────── */
 interface ContentItem {
@@ -27,21 +26,20 @@ interface ContentItem {
   description: string
   type: 'movie' | 'series'
   hlsUrl: string
-  /* NEW: every movie / series can belong to one-or-many “categories” */
-  categories?: string[]        // <- values must match `categories[x].value`
+  categories?: string[]
 }
 
 /* ─────────────── Grid ─────────────── */
 export default function ContentGrid() {
-  const [content, setContent]   = useState<ContentItem[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [hovered, setHovered]   = useState<string | null>(null)
+  const [content, setContent] = useState<ContentItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hovered, setHovered] = useState<string | null>(null)
 
   /* fetch once */
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       try {
-        const res = await fetch('/api/content?limit=120')
+        const res  = await fetch('/api/content?limit=120')
         const json = await res.json()
         if (json.success) setContent(json.data)
       } catch (err) {
@@ -54,7 +52,7 @@ export default function ContentGrid() {
 
   if (loading) return <JetLoader />
 
-  if (content.length === 0)
+  if (!content.length)
     return (
       <div className="py-16 text-center">
         <h2 className="text-2xl font-bold text-white mb-3">No Content Available</h2>
@@ -65,7 +63,7 @@ export default function ContentGrid() {
   /* build every section from category map */
   return (
     <div className="space-y-12">
-      {categories.map(({ title, value }: { title: string; value: string }) => {
+      {categories.map(({ title, value }) => {
         const list = content.filter(c => c.categories?.includes(value))
         if (!list.length) return null
         return (
@@ -97,40 +95,37 @@ function Section({
   return (
     <section>
       <h2 className="text-2xl font-bold mb-6 text-white">{title}</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {items.map((it) => (
+
+      {/* horizontal swiper row */}
+      <HorizontalSlider
+        items={items}
+        renderItem={(it) => (
           <CardItem
-            key={it.id}
             item={it}
             isHovered={hovered === it.id}
             onHover={() => setHovered(it.id)}
             onLeave={() => setHovered(null)}
           />
-        ))}
-      </div>
+        )}
+      />
     </section>
   )
 }
 
 /* ─────────────── Single Card ─────────────── */
-function CardItem({
-  item,
-  isHovered,
-  onHover,
-  onLeave,
-}: {
+function CardItem({ item, isHovered, onHover, onLeave }: {
   item: ContentItem
   isHovered: boolean
   onHover: () => void
   onLeave: () => void
 }) {
-  const router          = useRouter()
-  const [fav, setFav]   = useState(false)
+  const router        = useRouter()
+  const [fav, setFav] = useState(false)
 
   return (
     <Link
       href={`/content/${item.id}`}
-      className="block group relative cursor-pointer transition-transform duration-300 hover:scale-105"
+      className="block group relative cursor-pointer transition-transform duration-300 hover:scale-105 min-w-[150px] sm:min-w-[180px]"
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
     >
@@ -139,7 +134,7 @@ function CardItem({
         <img
           src={item.thumbnail || '/placeholder.svg'}
           alt={item.title}
-          className="w-full h-48 md:h-64 object-contains object-center rounded bg-black"
+          className="w-full h-48 md:h-64  object-contains  object-center bg-black"
         />
         <div className="p-3">
           <h3 className="font-semibold text-sm truncate text-white">{item.title}</h3>
