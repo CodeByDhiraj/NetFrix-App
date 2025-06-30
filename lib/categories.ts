@@ -1,0 +1,15 @@
+export const categories = [
+  { title: 'Trending Now',            value: 'trending' },
+  { title: 'Popular Movies',          value: 'popular-movie' },
+  { title: 'Top 10 Movies In Netflix',value: 'top10' },
+  { title: 'TV Series',               value: 'series-general' },
+  { title: 'Comedy Movies',           value: 'comedy' },
+  { title: 'East Asian Movies',       value: 'east-asian-movie' },
+  { title: 'East Asian Series',       value: 'east-asian-series' },
+  { title: 'Teen TV Shows',           value: 'teen' },
+  { title: 'Emotional Movies',        value: 'emotional' },
+  { title: 'Action & Adventure',      value: 'action-adventure' },
+  { title: 'Your Next Watch',         value: 'next-watch' },
+  { title: 'International TV Shows',  value: 'intl-tv' },
+  { title: 'Anime Shows',             value: 'animeshow' },
+]
