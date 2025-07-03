@@ -50,17 +50,17 @@ export default function OTTRow() {
                     container.scrollTo({ left: 0, behavior: 'smooth' })
                     timeout = setTimeout(() => {
                         if (!isHovered) {
-                            interval = setInterval(scrollStep, 30)
+                            interval = setInterval(scrollStep, 20)
                         }
                     }, 2000)
                 }, 1500)
             } else {
-                container.scrollBy({ left: 2, behavior: 'smooth' })
+                container.scrollBy({ left: 4, behavior: 'smooth' })
             }
         }
 
         if (!isHovered) {
-            interval = setInterval(scrollStep, 30)
+            interval = setInterval(scrollStep, 20)
         }
 
         return () => {
