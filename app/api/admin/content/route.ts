@@ -1,54 +1,71 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDatabase, COLLECTIONS } from "@/lib/mongodb"
 
+/* ───── disable edge/browser cache ───── */
+export const dynamic   = "force-dynamic";   // never prerender
+export const revalidate = 0;                // no ISR
+/* ─────────────────────────────────────── */
+
 export async function GET(request: NextRequest) {
   try {
     const db = await getDatabase()
     const contentCollection = db.collection(COLLECTIONS.CONTENT)
 
     const { searchParams } = new URL(request.url)
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "50")
+    const page   = Number.parseInt(searchParams.get("page")  || "1")
+    const limit  = Number.parseInt(searchParams.get("limit") || "50")
     const search = searchParams.get("search")
 
-    // Build query
+    /* build query */
     const query: any = {}
-
     if (search) {
       query.$or = [
-        { title: { $regex: search, $options: "i" } },
+        { title:       { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
-        { genre: { $in: [new RegExp(search, "i")] } },
-        { categories: { $in: [new RegExp(search, "i")] } },
+        { genre:       { $in: [new RegExp(search, "i")] } },
+        { categories:  { $in: [new RegExp(search, "i")] } },
       ]
     }
 
     const skip = (page - 1) * limit
 
     const [content, total] = await Promise.all([
-      contentCollection.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+      contentCollection
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+
       contentCollection.countDocuments(query),
     ])
 
-    return NextResponse.json({
-      success: true,
-      data: content,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
-        hasNextPage: page * limit < total,
-        hasPrevPage: page > 1,
-      },
-    })
+    /* ⬇️  send 200 with no-store cache header */
+    return new NextResponse(
+      JSON.stringify({
+        success: true,
+        data: content,
+        pagination: {
+          currentPage: page,
+          totalPages:  Math.ceil(total / limit),
+          totalItems:  total,
+          hasNextPage: page * limit < total,
+          hasPrevPage: page > 1,
+        },
+      }),
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store" },
+      }
+    )
   } catch (error) {
     console.error("Admin content fetch error:", error)
     return NextResponse.json(
       {
-        error: "Failed to fetch content",
+        error:   "Failed to fetch content",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
