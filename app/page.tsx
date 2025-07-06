@@ -7,7 +7,7 @@ import OTTRow from '@/components/home/OTTRow'
 import AnnouncementBell from "@/components/ui/AnnouncementBell"
 //import NetFrixrNote from '@/components/NetFrixNote';
 import NetFrixFooter from '@/components/NetFrixFooter';
-export const dynamic = "force-dynamic";
+
 
 
 export default function HomePage() {
