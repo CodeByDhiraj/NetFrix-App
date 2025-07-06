@@ -1,4 +1,5 @@
 // File: components/ui/announcement-bell.tsx
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client"
 
 import { useEffect, useState } from "react"
@@ -6,17 +7,21 @@ import { Bell, CheckCircle, Info, AlertTriangle, AlertCircle } from "lucide-reac
 import { Button } from "@/components/ui/button"
 import axios from "axios"
 
-/* ─────── ADD THIS SMALL COOKIE HELPER ─────── */
-const COOKIE_KEY = "nf_readAnn";
+/* ─────── Cookie helpers ─────── */
+const COOKIE_KEY = "nf_readAnn"
+
 const getRead = (): string[] => {
-  const m = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`));
-  return m ? JSON.parse(decodeURIComponent(m[1])) : [];
-};
+  if (typeof document === "undefined") return []          // SSR safety
+  const m = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`))
+  return m ? JSON.parse(decodeURIComponent(m[1])) : []
+}
+
 const setRead = (ids: string[]) => {
-  const maxAge = 60 * 60 * 24 * 30; // 30 days
-  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(JSON.stringify(ids))}; path=/; max-age=${maxAge}`;
-};
-/* ──────────────────────────────────────────── */
+  if (typeof document === "undefined") return              // SSR safety
+  const maxAge = 60 * 60 * 24 * 30                         // 30 days
+  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(JSON.stringify(ids))}; path=/; max-age=${maxAge}`
+}
+/* ────────────────────────────── */
 
 interface Announcement {
   _id: string
@@ -31,25 +36,25 @@ const iconMap: Record<Announcement["type"], JSX.Element> = {
   info: <Info className="h-4 w-4 text-blue-600" />,
   success: <CheckCircle className="h-4 w-4 text-green-400" />,
   warning: <AlertTriangle className="h-4 w-4 text-yellow-400" />,
-  error: <AlertCircle className="h-4 w-4 text-red-600" />,
+  error:   <AlertCircle className="h-4 w-4 text-red-600" />,
 }
 
 export default function AnnouncementBell() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [readIds, setReadIds] = useState<string[]>(getRead())   // ⬅ initial from cookie
+  const [readIds, setReadIds] = useState<string[]>([])         // ← start empty (SSR safe)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  /* ───────── Fetch every 30 s ───────── */
+  /* Load cookie once on client mount */
+  useEffect(() => setReadIds(getRead()), [])
+
+  /* Fetch announcements every 30 s and filter out read ones */
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
         const res = await axios.get("/api/announcements")
         if (res.data.success) {
-          // ⬅️ filter out already-read here
-          const unreadFilter = (res.data.data as Announcement[]).filter(
-            (a) => !readIds.includes(a._id)
-          )
-          setAnnouncements(unreadFilter)
+          const list = res.data.data as Announcement[]
+          setAnnouncements(list.filter((a) => !readIds.includes(a._id)))
         }
       } catch (err) {
         console.error("Error fetching announcements", err)
@@ -58,19 +63,20 @@ export default function AnnouncementBell() {
     fetchAnnouncements()
     const id = setInterval(fetchAnnouncements, 30_000)
     return () => clearInterval(id)
-  }, [readIds])                                // ← depend on readIds
+  }, [readIds])
 
   const markAsRead = (id: string) => {
     const updated = [...readIds, id]
     setReadIds(updated)
-    setRead(updated)                           // ⬅ save to cookie
+    setRead(updated)                                   // persist in cookie
     setAnnouncements((prev) => prev.filter((a) => a._id !== id))
   }
 
-  const unread = announcements.length
+  const unreadCount = announcements.length
 
   return (
     <div className="relative">
+      {/* Bell button */}
       <Button
         variant="ghost"
         size="icon"
@@ -78,13 +84,14 @@ export default function AnnouncementBell() {
         className="relative"
       >
         <Bell className="h-5 w-5 text-white" />
-        {unread > 0 && (
+        {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 flex items-center justify-center px-1 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full">
-            {unread}
+            {unreadCount}
           </span>
         )}
       </Button>
 
+      {/* Dropdown */}
       {dropdownOpen && (
         <div
           className="absolute top-full mt-2 z-50
@@ -112,6 +119,7 @@ export default function AnnouncementBell() {
                   </p>
                   <p className="text-xs text-gray-300 leading-snug">{a.message}</p>
                 </div>
+
                 <button
                   className="text-xs text-blue-400 hover:underline"
                   onClick={() => markAsRead(a._id)}
