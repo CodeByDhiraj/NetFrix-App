@@ -274,38 +274,48 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleAddAnnouncement = async (e: React.FormEvent) => {
-    e.preventDefault()
+ const handleAddAnnouncement = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    try {
-      const response = await fetch("/api/admin/announcements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(announcementData),
-      })
+  try {
+    // 👉 payload बनाने का सही तरीका
+    const payload = {
+      ...announcementData,
+      startDate: new Date(announcementData.startDate).toISOString(),
+      ...(announcementData.endDate
+        ? { endDate: new Date(announcementData.endDate).toISOString() }
+        : {}),
+    };
 
-      const data = await response.json()
+    const response = await fetch("/api/admin/announcements", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),   // ⬅️  अब यहाँ payload जा रहा है
+    });
 
-      if (data.success) {
-        setIsAnnouncementDialogOpen(false)
-        setAnnouncementData({
-          title: "",
-          message: "",
-          type: "info",
-          priority: "medium",
-          targetAudience: "all",
-          startDate: new Date().toISOString().slice(0, 16),
-          endDate: "",
-        })
-        setRefreshKey((prev) => prev + 1)
-        alert("Announcement created successfully!")
-      } else {
-        alert(data.error || "Failed to create announcement")
-      }
-    } catch (error) {
-      alert("Network error. Please try again.")
+    const data = await response.json();
+
+    if (data.success) {
+      setIsAnnouncementDialogOpen(false);
+      setAnnouncementData({
+        title: "",
+        message: "",
+        type: "info",
+        priority: "medium",
+        targetAudience: "all",
+        startDate: new Date().toISOString().slice(0, 16),
+        endDate: "",
+      });
+      setRefreshKey((prev) => prev + 1);
+      alert("Announcement created successfully!");
+    } else {
+      alert(data.error || "Failed to create announcement");
     }
+  } catch (error) {
+    alert("Network error. Please try again.");
+    console.error("Network error:", error);
   }
+};
 
   const handleDeleteAnnouncement = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete announcement "${title}"?`)) return
