@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
 
     const now = new Date()
 
-    // Get active announcements for users
     const announcements = await announcementsCollection
       .find({
         isActive: true,
@@ -20,10 +19,15 @@ export async function GET(request: NextRequest) {
       .limit(5)
       .toArray()
 
-    return NextResponse.json({
-      success: true,
-      data: announcements,
-    })
+    return new NextResponse(
+      JSON.stringify({ success: true, data: announcements }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store", // 🔥 This line is very important
+        },
+      }
+    )
   } catch (error) {
     console.error("Public announcements fetch error:", error)
     return NextResponse.json(
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch announcements",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
