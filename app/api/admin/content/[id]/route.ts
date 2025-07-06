@@ -2,33 +2,32 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getDatabase, COLLECTIONS } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
+/* 🆕  edge-cache off */
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const db = await getDatabase()
     const contentCollection = db.collection(COLLECTIONS.CONTENT)
 
-    if (!ObjectId.isValid(params.id)) {
+    if (!ObjectId.isValid(params.id))
       return NextResponse.json({ error: "Invalid content ID" }, { status: 400 })
-    }
 
     const content = await contentCollection.findOne({ _id: new ObjectId(params.id) })
-
-    if (!content) {
+    if (!content)
       return NextResponse.json({ error: "Content not found" }, { status: 404 })
-    }
 
-    return NextResponse.json({
-      success: true,
-      data: content,
-    })
-  } catch (error) {
-    console.error("Admin content fetch error:", error)
+    /* 🆕 send no-store header */
+    return new NextResponse(
+      JSON.stringify({ success: true, data: content }),
+      { status: 200, headers: { "Cache-Control": "no-store" } }
+    )
+  } catch (err) {
+    console.error("Admin content fetch error:", err)
     return NextResponse.json(
-      {
-        error: "Failed to fetch content",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
+      { error: "Failed to fetch content" },
+      { status: 500 }
     )
   }
 }
