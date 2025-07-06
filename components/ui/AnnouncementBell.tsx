@@ -1,27 +1,37 @@
-// File: components/ui/announcement-bell.tsx
-/* eslint-disable react-hooks/exhaustive-deps */
+// components/ui/announcement-bell.tsx
 "use client"
 
 import { useEffect, useState } from "react"
-import { Bell, CheckCircle, Info, AlertTriangle, AlertCircle } from "lucide-react"
+import {
+  Bell,
+  CheckCircle,
+  Info,
+  AlertTriangle,
+  AlertCircle,
+  CircleCheck
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import axios from "axios"
 
-/* ─────── Cookie helpers ─────── */
+/* ─── Cookie helpers ───────────────────────── */
 const COOKIE_KEY = "nf_readAnn"
 
 const getRead = (): string[] => {
-  if (typeof document === "undefined") return []          // SSR safety
-  const m = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`))
+  if (typeof document === "undefined") return []
+  const m = document.cookie.match(
+    new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`)
+  )
   return m ? JSON.parse(decodeURIComponent(m[1])) : []
 }
 
 const setRead = (ids: string[]) => {
-  if (typeof document === "undefined") return              // SSR safety
-  const maxAge = 60 * 60 * 24 * 30                         // 30 days
-  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(JSON.stringify(ids))}; path=/; max-age=${maxAge}`
+  if (typeof document === "undefined") return
+  const maxAge = 60 * 60 * 24 * 30 // 30 days
+  document.cookie =
+    `${COOKIE_KEY}=${encodeURIComponent(JSON.stringify(ids))};` +
+    ` path=/; max-age=${maxAge}`
 }
-/* ────────────────────────────── */
+/* ──────────────────────────────────────────── */
 
 interface Announcement {
   _id: string
@@ -33,50 +43,50 @@ interface Announcement {
 }
 
 const iconMap: Record<Announcement["type"], JSX.Element> = {
-  info: <Info className="h-4 w-4 text-blue-600" />,
+  info: <Info className="h-4 w-4 text-blue-500" />,
   success: <CheckCircle className="h-4 w-4 text-green-400" />,
   warning: <AlertTriangle className="h-4 w-4 text-yellow-400" />,
-  error:   <AlertCircle className="h-4 w-4 text-red-600" />,
+  error: <AlertCircle className="h-4 w-4 text-red-500" />,
 }
 
 export default function AnnouncementBell() {
+  /* readIds initialised *immediately* on client-side render,
+     so badge never flashes */
+  const [readIds, setReadIds] = useState<string[]>(
+    typeof window === "undefined" ? [] : getRead()
+  )
+
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [readIds, setReadIds] = useState<string[]>([])         // ← start empty (SSR safe)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  /* Load cookie once on client mount */
-  useEffect(() => setReadIds(getRead()), [])
-
-  /* Fetch announcements every 30 s and filter out read ones */
+  /* Fetch list every 30 s (no filtering here) */
   useEffect(() => {
-    const fetchAnnouncements = async () => {
+    const load = async () => {
       try {
         const res = await axios.get("/api/announcements")
-        if (res.data.success) {
-          const list = res.data.data as Announcement[]
-          setAnnouncements(list.filter((a) => !readIds.includes(a._id)))
-        }
-      } catch (err) {
-        console.error("Error fetching announcements", err)
+        if (res.data.success) setAnnouncements(res.data.data)
+      } catch (e) {
+        console.error("ann fetch failed:", e)
       }
     }
-    fetchAnnouncements()
-    const id = setInterval(fetchAnnouncements, 30_000)
+    load()
+    const id = setInterval(load, 30_000)
     return () => clearInterval(id)
-  }, [readIds])
+  }, [])
+
+  /* Helpers */
+  const unread = announcements.filter((a) => !readIds.includes(a._id)).length
 
   const markAsRead = (id: string) => {
+    if (readIds.includes(id)) return
     const updated = [...readIds, id]
     setReadIds(updated)
-    setRead(updated)                                   // persist in cookie
-    setAnnouncements((prev) => prev.filter((a) => a._id !== id))
+    setRead(updated) // persist cookie
   }
-
-  const unreadCount = announcements.length
 
   return (
     <div className="relative">
-      {/* Bell button */}
+      {/* Bell */}
       <Button
         variant="ghost"
         size="icon"
@@ -84,9 +94,9 @@ export default function AnnouncementBell() {
         className="relative"
       >
         <Bell className="h-5 w-5 text-white" />
-        {unreadCount > 0 && (
+        {unread > 0 && (
           <span className="absolute -top-1 -right-1 flex items-center justify-center px-1 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full">
-            {unreadCount}
+            {unread}
           </span>
         )}
       </Button>
@@ -107,27 +117,49 @@ export default function AnnouncementBell() {
           {announcements.length === 0 ? (
             <p className="p-4 text-sm text-gray-400">No announcements</p>
           ) : (
-            announcements.map((a) => (
-              <div
-                key={a._id}
-                className="flex gap-3 items-start px-4 py-3 border-b border-gray-800 hover:bg-gray-800 transition-colors"
-              >
-                <div className="pt-1">{iconMap[a.type]}</div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm text-white mb-0.5 leading-tight">
-                    {a.title}
-                  </p>
-                  <p className="text-xs text-gray-300 leading-snug">{a.message}</p>
-                </div>
-
-                <button
-                  className="text-xs text-blue-400 hover:underline"
-                  onClick={() => markAsRead(a._id)}
+            announcements.map((a) => {
+              const already = readIds.includes(a._id)
+              return (
+                <div
+                  key={a._id}
+                  className="flex gap-3 items-start px-4 py-3 border-b border-gray-800 hover:bg-gray-800 transition-colors"
                 >
-                  Mark as read
-                </button>
-              </div>
-            ))
+                  <div className="pt-1">
+                    {already ? (
+                      <CircleCheck className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      iconMap[a.type]
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <p
+                      className={`font-medium text-sm leading-tight ${
+                        already ? "text-gray-400" : "text-white"
+                      }`}
+                    >
+                      {a.title}
+                    </p>
+                    <p
+                      className={`text-xs leading-snug ${
+                        already ? "text-gray-500" : "text-gray-300"
+                      }`}
+                    >
+                      {a.message}
+                    </p>
+                  </div>
+
+                  {!already && (
+                    <button
+                      className="text-xs text-blue-400 hover:underline"
+                      onClick={() => markAsRead(a._id)}
+                    >
+                      Mark as read
+                    </button>
+                  )}
+                </div>
+              )
+            })
           )}
         </div>
       )}
