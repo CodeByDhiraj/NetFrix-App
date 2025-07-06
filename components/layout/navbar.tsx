@@ -144,8 +144,8 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-       {isMenuOpen && (
+      {/* Mobile Menu */}
+{isMenuOpen && (
   <div className="md:hidden mt-4 pb-4 border-t border-gray-800">
     <nav className="flex flex-col space-y-4 mt-4">
       <Link href="/"       className="hover:text-gray-300 transition-colors">Home</Link>
@@ -174,9 +174,6 @@ export default function Navbar() {
     </nav>
   </div>
 )}
-            </nav>
-          </div>
-        )}
       </div>
       {/* Profile Popup */}
       <ProfilePopup isOpen={isProfilePopupOpen} onClose={() => setProfilePopupOpen(false)} />
