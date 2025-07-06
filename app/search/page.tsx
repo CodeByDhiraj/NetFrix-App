@@ -5,25 +5,28 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Navbar    from '@/components/layout/navbar'
+import Navbar from '@/components/layout/navbar'
 import JetLoader from '@/components/ui/jet-loader'
 
 export default function SearchPage () {
-  /* ── query params ─────────────────────────── */
+  /* ── query params ─ */
   const searchParams = useSearchParams()
-  const query        = searchParams.get('q') || ''
+  const query = searchParams.get('q') || ''
 
-  /* ── state ────────────────────────────────── */
+  /* ── state ─ */
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  /* ── fetch whenever query changes ─────────── */
+  /* ── fetch whenever query changes ─ */
   useEffect(() => {
     if (!query) return
     ;(async () => {
       setLoading(true)
       try {
-        const res  = await fetch(`/api/content?search=${encodeURIComponent(query)}`)
+        const res = await fetch(
+          `/api/content?search=${encodeURIComponent(query)}`,
+          { cache: 'no-store' } // Force fresh data on all devices
+        )
         const json = await res.json()
         setResults(json?.data ?? [])
       } catch (e) {
@@ -35,11 +38,11 @@ export default function SearchPage () {
     })()
   }, [query])
 
-  /* ── helpers ──────────────────────────────── */
+  /* ── helpers ─ */
   const router = useRouter()
   const openDetail = (id: string) => router.push(`/content/${id}`)
 
-  /* ── UI ───────────────────────────────────── */
+  /* ── UI ─ */
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
@@ -56,10 +59,9 @@ export default function SearchPage () {
           ) : results.length ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {results.map(item => (
-                /* clickable card */
                 <button
-                  key={item.id}
-                  onClick={() => openDetail(item.id)}
+                  key={item._id}
+                  onClick={() => openDetail(item._id)}
                   className="group text-left cursor-pointer focus:outline-none"
                 >
                   <div className="relative overflow-hidden rounded-lg">
@@ -68,7 +70,6 @@ export default function SearchPage () {
                       alt={item.title}
                       className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-
                     <div className="absolute inset-0 bg-black/60 opacity-0
                                     group-hover:opacity-100 transition-opacity duration-300
                                     flex items-center justify-center">
@@ -94,7 +95,7 @@ export default function SearchPage () {
                 No results found for &quot;{query}&quot;
               </p>
               <p className="text-gray-500 mt-2">
-                Try searching for something else
+                Try searching for something else — we soon will have more content! Keep supporting us.
               </p>
             </div>
           )}
