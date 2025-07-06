@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
 
     /* transform */
     const data = docs.map(item => ({
-      _id:         item._id,
+      id:          String(item._id),      
+      _id:         String(item._id),
       title:       item.title,
       slug:        item.slug,
       description: item.description,
