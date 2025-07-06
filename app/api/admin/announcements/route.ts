@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
       priority: priority || "medium",
       targetAudience: targetAudience || "all",
       isActive: true,
-      startDate: new Date(startDate || Date.now()),
-      endDate: endDate ? new Date(endDate) : undefined,
+      startDate: new Date(startDate ? new Date(startDate).toISOString() : Date.now()),
+      endDate: endDate ? new Date(new Date(endDate).toISOString()) : undefined,
       createdBy: new ObjectId(), // In real app, get from auth
       createdAt: new Date(),
       updatedAt: new Date(),
