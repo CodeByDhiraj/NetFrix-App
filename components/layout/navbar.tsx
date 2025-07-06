@@ -158,7 +158,7 @@ export default function Navbar() {
                   placeholder="Search content..."
                    value={searchQuery}
                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={(e) => {
+                      onKeyDown={(e) => {
                           if (e.key === "Enter" && searchQuery.trim()) {
                         window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
                             }
