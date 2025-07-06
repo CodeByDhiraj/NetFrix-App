@@ -103,24 +103,25 @@ export default function AnnouncementBell() {
   return (
     <div className="relative">
       {/* Bell */}
-     <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9 rounded-md transition
-             bg-transparent text-white
-             hover:bg-white active:bg-white/80
-             data-[state=open]:bg-white
-             data-[state=open]:text-neutral-900"
-      >
-        <Bell className="h-5 w-5" />
+    const btnClasses = dropdownOpen
+  ? "h-9 w-9 rounded-md transition bg-white text-neutral-900"
+  : "h-9 w-9 rounded-md transition bg-transparent text-white hover:bg-white/10 active:bg-white/20";
 
-        {unread.length > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center
+<Button
+  variant="ghost"
+  size="icon"
+  onClick={() => setDropdownOpen(o => !o)}   
+  className={btnClasses}
+>
+  <Bell className="h-5 w-5" />
+
+  {unread > 0 && (                        
+    <span className="absolute -top-1 -right-1 flex items-center justify-center
                      px-1 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full">
-            {unread.length}
-          </span>
-        )}
-      </Button>
+      {unread}
+    </span>
+  )}
+</Button>
 
       {/* Dropdown */}
       {dropdownOpen && (
