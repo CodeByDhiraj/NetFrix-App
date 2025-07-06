@@ -153,20 +153,19 @@ export default function Navbar() {
               <Link href="/series" className="hover:text-gray-300 transition-colors">TV Series</Link>
               <button onClick={triggerToast} className="flex items-center cursor-pointer">My List</button>
 
-             <Input
-                type="text"
-                  placeholder="Search content..."
-                   value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                          if (e.key === "Enter" && searchQuery.trim()) {
-                        window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
-                            }
-                       }}
-                       className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-                    />
-
-              </div>
+            <Input
+    type="text"
+    placeholder="Search content..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" && searchQuery.trim()) {
+        window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
+      }
+    }}
+    className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 flex-1"
+  />
+</div>
             </nav>
           </div>
         )}
