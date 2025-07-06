@@ -17,15 +17,12 @@ import axios from "axios"
 const KEY = "nf_readAnn"
 
 const getPersisted = (): string[] => {
-  /* 1️⃣ try localStorage (WebView survives app restart) */
   try {
     if (typeof localStorage !== "undefined") {
       const raw = localStorage.getItem(KEY)
       if (raw) return JSON.parse(raw)
     }
-  } catch {/* ignore quota / security errors */}
-
-  /* 2️⃣ cookie fallback (desktop browsers) */
+  } catch {}
   if (typeof document !== "undefined") {
     const m = document.cookie.match(new RegExp(`(?:^|; )${KEY}=([^;]*)`))
     if (m) return JSON.parse(decodeURIComponent(m[1]))
@@ -34,14 +31,11 @@ const getPersisted = (): string[] => {
 }
 
 const savePersisted = (ids: string[]) => {
-  /* save to localStorage if possible */
   try {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(KEY, JSON.stringify(ids))
     }
-  } catch {/* ignore */}
-
-  /* write a cookie too (30 days) */
+  } catch {}
   if (typeof document !== "undefined") {
     const maxAge = 60 * 60 * 24 * 30
     document.cookie =
@@ -67,15 +61,13 @@ const iconMap: Record<Announcement["type"], JSX.Element> = {
 }
 
 export default function AnnouncementBell() {
-  /* SSR-safe initial state; badge never flashes */
   const [readIds, setReadIds] = useState<string[]>(
     typeof window === "undefined" ? [] : getPersisted()
   )
-
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  /* Fetch every 30 s */
+  /* fetch every 30 s */
   useEffect(() => {
     const load = async () => {
       try {
@@ -90,47 +82,48 @@ export default function AnnouncementBell() {
     return () => clearInterval(id)
   }, [])
 
-  /* Helpers */
   const unread = announcements.filter((a) => !readIds.includes(a._id)).length
 
   const markAsRead = (id: string) => {
     if (readIds.includes(id)) return
     const updated = [...readIds, id]
     setReadIds(updated)
-    savePersisted(updated)        // ← cookie + localStorage
+    savePersisted(updated)
   }
+
+  /* 🔑 compute button classes once per render */
+  const btnClasses =
+    "h-9 w-9 rounded-md transition " +
+    (dropdownOpen
+      ? "bg-white text-neutral-900"
+      : "bg-transparent text-white hover:bg-white/10 active:bg-white/20")
 
   return (
     <div className="relative">
-      {/* Bell */}
-    const btnClasses = dropdownOpen
-  ? "h-9 w-9 rounded-md transition bg-white text-neutral-900"
-  : "h-9 w-9 rounded-md transition bg-transparent text-white hover:bg-white/10 active:bg-white/20";
-
-<Button
-  variant="ghost"
-  size="icon"
-  onClick={() => setDropdownOpen(o => !o)}   
-  className={btnClasses}
->
-  <Bell className="h-5 w-5" />
-
-  {unread > 0 && (                        
-    <span className="absolute -top-1 -right-1 flex items-center justify-center
-                     px-1 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full">
-      {unread}
-    </span>
-  )}
-</Button>
+      {/* Bell button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setDropdownOpen((o) => !o)}
+        className={btnClasses}
+      >
+        <Bell className="h-5 w-5" />
+        {unread > 0 && (
+          <span className="absolute -top-1 -right-1 flex items-center justify-center
+                           px-1 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full">
+            {unread}
+          </span>
+        )}
+      </Button>
 
       {/* Dropdown */}
       {dropdownOpen && (
         <div
           className="absolute top-full mt-2 z-50
-             right-1/2 translate-x-[42%] sm:right-0 sm:translate-x-0
-             w-[90vw] sm:w-80 md:w-96
-             max-h-96 overflow-y-auto
-             bg-gray-900 border border-gray-700 rounded-md shadow-lg"
+                     right-1/2 translate-x-[42%] sm:right-0 sm:translate-x-0
+                     w-[90vw] sm:w-80 md:w-96
+                     max-h-96 overflow-y-auto
+                     bg-gray-900 border border-gray-700 rounded-md shadow-lg"
         >
           <div className="px-4 py-2 border-b border-gray-700 text-white font-semibold text-sm">
             Announcements
