@@ -13,25 +13,42 @@ import {
 import { Button } from "@/components/ui/button"
 import axios from "axios"
 
-/* ─── Cookie helpers ───────────────────────── */
-const COOKIE_KEY = "nf_readAnn"
+/* ─── Persistence helpers (localStorage ➜ cookie fallback) ─── */
+const KEY = "nf_readAnn"
 
-const getRead = (): string[] => {
-  if (typeof document === "undefined") return []
-  const m = document.cookie.match(
-    new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`)
-  )
-  return m ? JSON.parse(decodeURIComponent(m[1])) : []
+const getPersisted = (): string[] => {
+  /* 1️⃣ try localStorage (WebView survives app restart) */
+  try {
+    if (typeof localStorage !== "undefined") {
+      const raw = localStorage.getItem(KEY)
+      if (raw) return JSON.parse(raw)
+    }
+  } catch {/* ignore quota / security errors */}
+
+  /* 2️⃣ cookie fallback (desktop browsers) */
+  if (typeof document !== "undefined") {
+    const m = document.cookie.match(new RegExp(`(?:^|; )${KEY}=([^;]*)`))
+    if (m) return JSON.parse(decodeURIComponent(m[1]))
+  }
+  return []
 }
 
-const setRead = (ids: string[]) => {
-  if (typeof document === "undefined") return
-  const maxAge = 60 * 60 * 24 * 30 // 30 days
-  document.cookie =
-    `${COOKIE_KEY}=${encodeURIComponent(JSON.stringify(ids))};` +
-    ` path=/; max-age=${maxAge}`
+const savePersisted = (ids: string[]) => {
+  /* save to localStorage if possible */
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(KEY, JSON.stringify(ids))
+    }
+  } catch {/* ignore */}
+
+  /* write a cookie too (30 days) */
+  if (typeof document !== "undefined") {
+    const maxAge = 60 * 60 * 24 * 30
+    document.cookie =
+      `${KEY}=${encodeURIComponent(JSON.stringify(ids))}; path=/; max-age=${maxAge}`
+  }
 }
-/* ──────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────── */
 
 interface Announcement {
   _id: string
@@ -50,16 +67,15 @@ const iconMap: Record<Announcement["type"], JSX.Element> = {
 }
 
 export default function AnnouncementBell() {
-  /* readIds initialised *immediately* on client-side render,
-     so badge never flashes */
+  /* SSR-safe initial state; badge never flashes */
   const [readIds, setReadIds] = useState<string[]>(
-    typeof window === "undefined" ? [] : getRead()
+    typeof window === "undefined" ? [] : getPersisted()
   )
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  /* Fetch list every 30 s (no filtering here) */
+  /* Fetch every 30 s */
   useEffect(() => {
     const load = async () => {
       try {
@@ -81,7 +97,7 @@ export default function AnnouncementBell() {
     if (readIds.includes(id)) return
     const updated = [...readIds, id]
     setReadIds(updated)
-    setRead(updated) // persist cookie
+    savePersisted(updated)        // ← cookie + localStorage
   }
 
   return (
