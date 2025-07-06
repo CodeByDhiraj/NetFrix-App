@@ -1,10 +1,22 @@
-// File: components/ui/announcement-bell.tsx (responsive dropdown)
+// File: components/ui/announcement-bell.tsx
 "use client"
 
 import { useEffect, useState } from "react"
 import { Bell, CheckCircle, Info, AlertTriangle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import axios from "axios"
+
+/* ─────── ADD THIS SMALL COOKIE HELPER ─────── */
+const COOKIE_KEY = "nf_readAnn";
+const getRead = (): string[] => {
+  const m = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]*)`));
+  return m ? JSON.parse(decodeURIComponent(m[1])) : [];
+};
+const setRead = (ids: string[]) => {
+  const maxAge = 60 * 60 * 24 * 30; // 30 days
+  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(JSON.stringify(ids))}; path=/; max-age=${maxAge}`;
+};
+/* ──────────────────────────────────────────── */
 
 interface Announcement {
   _id: string
@@ -24,15 +36,21 @@ const iconMap: Record<Announcement["type"], JSX.Element> = {
 
 export default function AnnouncementBell() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [readIds, setReadIds] = useState<string[]>([])
+  const [readIds, setReadIds] = useState<string[]>(getRead())   // ⬅ initial from cookie
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  /* ───────── Fetch every 30 s ───────── */
+  /* ───────── Fetch every 30 s ───────── */
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
         const res = await axios.get("/api/announcements")
-        if (res.data.success) setAnnouncements(res.data.data as Announcement[])
+        if (res.data.success) {
+          // ⬅️ filter out already-read here
+          const unreadFilter = (res.data.data as Announcement[]).filter(
+            (a) => !readIds.includes(a._id)
+          )
+          setAnnouncements(unreadFilter)
+        }
       } catch (err) {
         console.error("Error fetching announcements", err)
       }
@@ -40,15 +58,19 @@ export default function AnnouncementBell() {
     fetchAnnouncements()
     const id = setInterval(fetchAnnouncements, 30_000)
     return () => clearInterval(id)
-  }, [])
+  }, [readIds])                                // ← depend on readIds
 
-  const unread = announcements.filter((a) => !readIds.includes(a._id))
+  const markAsRead = (id: string) => {
+    const updated = [...readIds, id]
+    setReadIds(updated)
+    setRead(updated)                           // ⬅ save to cookie
+    setAnnouncements((prev) => prev.filter((a) => a._id !== id))
+  }
 
-  const markAsRead = (id: string) => setReadIds((prev) => [...prev, id])
+  const unread = announcements.length
 
   return (
     <div className="relative">
-      {/* Bell button */}
       <Button
         variant="ghost"
         size="icon"
@@ -56,14 +78,13 @@ export default function AnnouncementBell() {
         className="relative"
       >
         <Bell className="h-5 w-5 text-white" />
-        {unread.length > 0 && (
+        {unread > 0 && (
           <span className="absolute -top-1 -right-1 flex items-center justify-center px-1 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full">
-            {unread.length}
+            {unread}
           </span>
         )}
       </Button>
 
-      {/* Dropdown */}
       {dropdownOpen && (
         <div
           className="absolute top-full mt-2 z-50
@@ -72,7 +93,6 @@ export default function AnnouncementBell() {
              max-h-96 overflow-y-auto
              bg-gray-900 border border-gray-700 rounded-md shadow-lg"
         >
-
           <div className="px-4 py-2 border-b border-gray-700 text-white font-semibold text-sm">
             Announcements
           </div>
@@ -90,18 +110,14 @@ export default function AnnouncementBell() {
                   <p className="font-medium text-sm text-white mb-0.5 leading-tight">
                     {a.title}
                   </p>
-                  <p className="text-xs text-gray-300 leading-snug">
-                    {a.message}
-                  </p>
+                  <p className="text-xs text-gray-300 leading-snug">{a.message}</p>
                 </div>
-                {!readIds.includes(a._id) && (
-                  <button
-                    className="text-xs text-blue-400 hover:underline"
-                    onClick={() => markAsRead(a._id)}
-                  >
-                    Mark as read
-                  </button>
-                )}
+                <button
+                  className="text-xs text-blue-400 hover:underline"
+                  onClick={() => markAsRead(a._id)}
+                >
+                  Mark as read
+                </button>
               </div>
             ))
           )}
