@@ -145,27 +145,35 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-gray-800">
-            <nav className="flex flex-col space-y-4 mt-4">
-              <Link href="/" className="hover:text-gray-300 transition-colors">Home</Link>
-              <Link href="/movies" className="hover:text-gray-300 transition-colors">Movies</Link>
-              <Link href="/series" className="hover:text-gray-300 transition-colors">TV Series</Link>
-              <button onClick={triggerToast} className="flex items-center cursor-pointer">My List</button>
+       {isMenuOpen && (
+  <div className="md:hidden mt-4 pb-4 border-t border-gray-800">
+    <nav className="flex flex-col space-y-4 mt-4">
+      <Link href="/"       className="hover:text-gray-300 transition-colors">Home</Link>
+      <Link href="/movies" className="hover:text-gray-300 transition-colors">Movies</Link>
+      <Link href="/series" className="hover:text-gray-300 transition-colors">TV Series</Link>
+      <button onClick={triggerToast} className="flex items-center cursor-pointer">
+        My List
+      </button>
 
-            <Input
-    type="text"
-    placeholder="Search content..."
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    onKeyDown={(e) => {
-      if (e.key === "Enter" && searchQuery.trim()) {
-        window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
-      }
-    }}
-    className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 flex-1"
-  />
-</div>
+      {/* mobile search row */}
+      <div className="flex items-center space-x-2 pt-2">
+        <Search className="w-5 h-5 text-gray-400" />
+        <Input
+          type="text"
+          placeholder="Search content..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && searchQuery.trim()) {
+              window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
+            }
+          }}
+          className="flex-1 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+        />
+      </div>
+    </nav>
+  </div>
+)}
             </nav>
           </div>
         )}
