@@ -17,7 +17,7 @@ const NetFrixFooter: React.FC<NetFrixFooter> = ({ className = '' }) => {
       }
     >
       <h2 className="text-red-700 text-center text-lg sm:text-xl font-bold mb-2">
-    NetFrix – One UI to Explore the Future of OTT Platforms. (Demo Purposes Only)
+   NetFrix – Your First Destination to Access Netflix, Prime & 99+ OTTs in One Click.
       </h2>
       <br />
 
